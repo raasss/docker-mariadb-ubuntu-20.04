@@ -11,8 +11,8 @@ RUN set -e; \
     apt-get install -y --no-install-recommends \
       tini \
       crudini \
-      mariadb-server-10.3=1:10.3.22-1ubuntu1 \
-      mariadb-client-10.3=1:10.3.22-1ubuntu1; \
+      mariadb-server \
+      mariadb-client; \
     apt-get autoremove -y; \
     apt-get clean; \
     rm -rvf /var/lib/apt/lists/*
