@@ -1,0 +1,7 @@
+version: '3.5'
+
+services:
+  db:
+    build: .
+    # environment:
+    #   - PHP_FPM_INI_1=PHP:memory_limit:141M
