@@ -1,9 +1,9 @@
-name: MariaDB on Ubuntu 20.04
+name: latest
 
 on:
   push:
     tags:
-      - '*.*.*'
+      - '[0-9]+.[0-9]+.[0-9]+'
 
 jobs:
   build:
@@ -39,8 +39,3 @@ jobs:
             --tag quay.io/raasss/mariadb-ubuntu-20.04:${GITHUB_REF_NAME} \
             --tag quay.io/raasss/mariadb-ubuntu-20.04:latest \
             --platform linux/amd64,linux/arm/v7,linux/arm64 .
-      # - name: Save Docker build cache
-      #   uses: actions/upload-artifact@v2
-      #   with:
-      #     name: docker-cache
-      #     path: /var/lib/containers
