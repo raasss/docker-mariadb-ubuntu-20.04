@@ -5,7 +5,16 @@ networks:
     driver: bridge
 
 services:
-  mariadb:
+  mariadb-server:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    networks:
+      - private
+    ports:
+      - "3306"
+
+  mariadb-client:
     build:
       context: .
       dockerfile: Dockerfile
