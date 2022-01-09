@@ -2,10 +2,11 @@
 
 set -xe
 
-# TODO: implement supervisord for running 3 tails and mariadb
 tail -F /var/log/mysql/mysql.log >/dev/stdout &
 tail -F  /var/log/mysql/error.log >/dev/stderr &
 tail -F  /var/log/mysql/mariadb-slow.log >/dev/stdout &
+
+# customize mariadb conf file in runtime from environment variables
 
 for ENVVAR in $(env | grep -E '^MARIADB_SERVER_CONF_.+')
 do
@@ -15,29 +16,52 @@ do
   crudini --verbose --set "/etc/mysql/mariadb.conf.d/50-server.cnf" "${ENVVAR_SECTION}" "${ENVVAR_KEY}" "${ENVVAR_VALUE}"
 done
 
-mysqld_safe &
-MYSQLD_SAFE_PID=$!
+# print mysqld startup defaults for easy check by user of this docker image
 
-echo -n "Waiting 1min for mysql to start"
-for I in {0..5}; do
+mysqld --print-defaults
+
+# start mysqld
+
+mysqld_safe &
+
+# wait 60 seconds for mysqld to become operational
+
+for I in {0..59}; do
     if mysql -v --user=root --password="" -e "SELECT 1"; then
         break
     fi
-    echo -n .
     sleep 1s
 done
 
-if [ "${I}" == "5" ]; then
+# exit with error code 1 if mysqld didn't became operational after 60 seconds
+
+if [ "${I}" == "59" ]; then
     exit 1
 fi
 
+# configure database, user and access from environment variables
+
 mysql -v -e "CREATE DATABASE IF NOT EXISTS ${MYSQL_DATABASE}"
-mysql -v -e "GRANT ALL PRIVILEGES ON ${MYSQL_DATABASE}.* TO ${MYSQL_USER}@'%' IDENTIFIED BY '${MYSQL_PASSWORD}'"
-mysql -v -e "GRANT ALL PRIVILEGES ON ${MYSQL_DATABASE}.* TO ${MYSQL_USER}@'localhost' IDENTIFIED BY '${MYSQL_PASSWORD}'"
+mysql -v -e "CREATE USER IF NOT EXISTS ${MYSQL_USER}@'%' IDENTIFIED BY '${MYSQL_PASSWORD}'"
+mysql -v -e "CREATE USER IF NOT EXISTS ${MYSQL_USER}@'localhost' IDENTIFIED BY '${MYSQL_PASSWORD}'"
+mysql -v -e "GRANT ALL PRIVILEGES ON ${MYSQL_DATABASE}.* TO ${MYSQL_USER}@'%'"
+mysql -v -e "GRANT ALL PRIVILEGES ON ${MYSQL_DATABASE}.* TO ${MYSQL_USER}@'localhost'"
+mysql -v -e "FLUSH PRIVILEGES"
 
-MYSQLD_PID="$(cat /var/run/mysqld/mysqld.pid)"
-kill -s TERM "${MYSQLD_PID}"
+# wait for any subprocess to fail and get it's exit code
 
-wait "${MYSQLD_SAFE_PID}"
+set +e
+wait -n
+set -e
 
-mysqld_safe
+ERROR_CODE=$?
+
+# gracefully shutdown mysql if it is working
+
+if mysql -v -e "SELECT 1"; then
+    mysqladmin shutdown || true
+fi
+
+# exit bash with fail subprocess exit code
+
+exit ${ERROR_CODE}
