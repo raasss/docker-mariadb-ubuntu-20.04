@@ -16,6 +16,7 @@ for TESTDIR in $(ls -d test*); do
     cp -f ../../docker-entrypoint.sh .
     cp -f ../../Dockerfile .
 
+    docker-compose pull
     docker-compose build
     docker-compose up -d
     DOCKER_HOST_URL="http://$(docker-compose port mariadb-server 3306)"
@@ -36,6 +37,7 @@ for TESTDIR in $(ls -d test*); do
             RESULTS="${RESULTS}${TESTDIR}/${TESTFILE} ... ${GREEN}PASS${NC}\n"
         else
             echo -e ">>> ${TESTDIR}/${TESTFILE} ... ${RED}FAIL${NC}"
+            RESULTS="${RESULTS}${TESTDIR}/${TESTFILE} ... ${RED}FAIL${NC}\n"
         fi
     done
     # # Clean test environment
