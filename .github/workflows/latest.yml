@@ -39,3 +39,15 @@ jobs:
             --tag quay.io/raasss/mariadb-ubuntu-20.04:${GITHUB_REF_NAME} \
             --tag quay.io/raasss/mariadb-ubuntu-20.04:latest \
             --platform linux/amd64,linux/arm/v7,linux/arm64 .
+      - name: Send slack notification for success
+        if: success()
+        env:
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+        run: |
+          curl -X POST -H 'Content-type: application/json' --data "{\"attachments\": [{\"color\": \"#00FF00\", \"blocks\": [{\"type\": \"section\", \"text\": {\"type\": \"mrkdwn\", \"text\": \"*Workflow:* <${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}|${GITHUB_WORKFLOW} #${GITHUB_RUN_NUMBER}>\n*Repository:* <${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/tree/${GITHUB_SHA}|${GITHUB_REPOSITORY}>\n*Commit:* <${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/commit/${GITHUB_SHA}|${GITHUB_REF}>\"}}]}]}" ${SLACK_WEBHOOK}
+      - name: Send slack notification for failure
+        if: failure()
+        env:
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+        run: |
+          curl -X POST -H 'Content-type: application/json' --data "{\"attachments\": [{\"color\": \"#FF0000\", \"blocks\": [{\"type\": \"section\", \"text\": {\"type\": \"mrkdwn\", \"text\": \"*Workflow:* <${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}|${GITHUB_WORKFLOW} #${GITHUB_RUN_NUMBER}>\n*Repository:* <${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/tree/${GITHUB_SHA}|${GITHUB_REPOSITORY}>\n*Commit:* <${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/commit/${GITHUB_SHA}|${GITHUB_REF}>\"}}]}]}" ${SLACK_WEBHOOK}
